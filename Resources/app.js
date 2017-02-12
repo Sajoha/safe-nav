@@ -1,47 +1,81 @@
 /**
- * Create a new `Ti.UI.TabGroup`.
- */
-var tabGroup = Ti.UI.createTabGroup();
+* Plotting page
+* 
+* This is the page where the user will give the destinations that
+* they want to go between. They will be presented with two text boxes
+* where they can give a route start and finish address.
+*/
 
-/**
- * Add the two created tabs to the tabGroup object.
- */
-tabGroup.addTab(createTab("Tab 1", "I am Window 1", "assets/images/tab1.png"));
-tabGroup.addTab(createTab("Tab 2", "I am Window 2", "assets/images/tab2.png"));
+// Create the route window
+var routeWin = Ti.UI.createWindow({
+	
+});
 
-/**
- * Open the tabGroup
- */
-tabGroup.open();
+// Route view, where all the UI elements are contained
+var routeView = Ti.UI.createView({
+	layout: 'vertical',
+	backgroundColor: '#349CC2',
+	height: Ti.UI.FILL,
+	width: Ti.UI.FILL
+});
+routeWin.add(routeView);
 
-/**
- * Creates a new Tab and configures it.
- *
- * @param  {String} title The title used in the `Ti.UI.Tab` and it's included `Ti.UI.Window`
- * @param  {String} message The title displayed in the `Ti.UI.Label`
- * @return {String} icon The icon used in the `Ti.UI.Tab`
- */
-function createTab(title, message, icon) {
-    var win = Ti.UI.createWindow({
-        title: title,
-        backgroundColor: '#fff'
-    });
+// Page title
+var titleLbl = Ti.UI.createLabel({
+	text: 'Hello world',
+	color: '#EDA60F',
+	top: '25dp',
+	center: 'horizontal'
+});
+routeView.add(titleLbl);
 
-    var label = Ti.UI.createLabel({
-        text: message,
-        color: "#333",
-        font: {
-            fontSize: 20
-        }
-    });
+// From label
+var fromLbl = Ti.UI.createLabel({
+	text: 'Start Point:',
+	color: '#EDA60F',
+	top: '10%',
+	left: '5%'
+});
+routeView.add(fromLbl);
 
-    win.add(label);
+// The starting address of the route
+var fromTxt = Ti.UI.createTextField({
+	borderStyle: Ti.UI.INPUT_BORDERSTYLE_ROUNDED,
+	width: '90%',
+	top: '1%'
+});
+routeView.add(fromTxt);
 
-    var tab = Ti.UI.createTab({
-        title: title,
-        icon: icon,
-        window: win
-    });
+// To label
+var toLbl = Ti.UI.createLabel({
+	text: 'End Point:',
+	color: '#EDA60F',
+	top: '5%',
+	left: '5%'
+});
+routeView.add(toLbl);
 
-    return tab;
-}
+// The end address of the route
+var toTxt = Ti.UI.createTextField({
+	borderStyle: Ti.UI.INPUT_BORDERSTYLE_ROUNDED,
+	width: '90%',
+	top: '1%'
+});
+routeView.add(toTxt);
+
+// The activation button for the page
+var goBtn = Ti.UI.createButton({
+	title: 'Plot Route!',
+	color: '#349CC2',
+	backgroundColor: '#EDA60F',
+	width: '90%',
+	top: '20%'
+});
+routeView.add(goBtn);
+
+goBtn.addEventListener('click', function(e) {
+	alert(fromTxt.getValue());
+});
+
+// Start the current page
+routeWin.open();
