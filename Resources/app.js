@@ -74,7 +74,7 @@ var goBtn = Ti.UI.createButton({
 routeView.add(goBtn);
 
 goBtn.addEventListener('click', function(e) {
-	alert(fromTxt.getValue());
+	var map = require('map.js');
 });
 
 // Start the current page
