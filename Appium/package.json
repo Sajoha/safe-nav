@@ -1,0 +1,21 @@
+{
+  "name": "appium",
+  "version": "1.0.0",
+  "description": "Appium tests for safe-nav application",
+  "scripts": {
+    "test": "mocha test/ios_test.js"
+  },
+  "author": "Sam Haig",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SamJHaig/safe-nav/issues"
+  },
+  "homepage": "https://github.com/SamJHaig/safe-nav",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "colors": "^1.1.2",
+    "mocha": "^3.2.0",
+    "wd": "^1.0.0"
+  }
+}
