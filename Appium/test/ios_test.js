@@ -27,7 +27,7 @@ before('suite setup', function() {
     return driver.init({
         automationName: 'XCUITest',
         platformName: 'iOS',
-        deviceName: 'iPhone SE',
+        deviceName: 'iPhone 7',
         platformVersion: '10.2',
         app: '/Users/sam/Workspace/GitHub/safe-nav/build/iphone/build/Products/Debug-iphonesimulator/safeNav.app',
         noReset: true // doesn't kill the simulator
