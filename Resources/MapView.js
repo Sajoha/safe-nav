@@ -7,20 +7,22 @@ var Map = require('ti.map');
 function MapView() {
     // Create the route window object
     var mapWin = Ti.UI.createWindow();
+    var mapview = Map.createView();
 
-    // Create a map object, and insert it in the window
-    var mapview = Map.createView({
-        mapType: Map.NORMAL_TYPE,
-        region: {
-            latitude: 52.505366,
-            longitude: 13.386624,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01
-        },
-        animate: true,
-        regionFit: true,
-        userLocation: true,
-        annotations: []
+    // Get the users current location
+    Titanium.Geolocation.getCurrentPosition(function(e) {
+        // Create a map object, and insert it in the window
+        mapview.mapType = Map.NORMAL_TYPE,
+            mapview.region = {
+                latitude: e.coords.latitude,
+                longitude: e.coords.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01
+            },
+            mapview.animate = true,
+            mapview.regionFit = true,
+            mapview.userLocation = true,
+            mapview.annotations = []
     });
     mapWin.add(mapview);
 
@@ -36,12 +38,11 @@ function MapView() {
 
     mapWin.open();
 };
-
 module.exports = MapView;
 
 function getRoute(done) {
     // Query the API server with the given coordinates
-    var url = 'https://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true'
+    var url = 'http://192.168.0.39:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true'
     // var url = "http://192.168.0.39:5000/route/v1/driving/53.848611,-1.663822;53.870108,-1.727657?steps=true";
 
     // Instantiate the routePoints object
