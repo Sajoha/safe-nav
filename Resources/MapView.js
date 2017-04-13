@@ -5,22 +5,15 @@
 var Map = require('ti.map');
 
 function MapView() {
+    // Create the route window object
     var mapWin = Ti.UI.createWindow();
 
-    // var mountainView = Map.createAnnotation({
-    //     latitude: 37.390749,
-    //     longitude: -122.081651,
-    //     title: "Appcelerator Headquarters",
-    //     subtitle: 'Mountain View, CA',
-    //     pincolor: Map.ANNOTATION_RED,
-    //     myid: 1 // Custom property to uniquely identify this annotation.
-    // });
-
+    // Create a map object, and insert it in the window
     var mapview = Map.createView({
         mapType: Map.NORMAL_TYPE,
         region: {
-            latitude: 13.386624,
-            longitude: 52.505366,
+            latitude: 52.505366,
+            longitude: 13.386624,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01
         },
@@ -29,33 +22,47 @@ function MapView() {
         userLocation: true,
         annotations: []
     });
-
     mapWin.add(mapview);
 
-    // Query the API server
+    // Collect the route points, and draw them onto the map
+    getRoute(function(routePoints) {
+        var route = Map.createRoute({
+            points: routePoints,
+            color: "#f00",
+            width: 5.0
+        });
+        mapview.addRoute(route);
+    });
 
+    mapWin.open();
+};
+
+module.exports = MapView;
+
+function getRoute(done) {
+    // Query the API server with the given coordinates
     var url = 'https://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true'
     // var url = "http://192.168.0.39:5000/route/v1/driving/53.848611,-1.663822;53.870108,-1.727657?steps=true";
+
+    // Instantiate the routePoints object
+    var routePoints = [];
 
     // Parse the response
     var client = Ti.Network.createHTTPClient({
         onload: function(e) {
             var response = JSON.parse(this.responseText);
-            var count = 0;
+            // Concatinate all of the JSON coordinates into an array
             for(var i = 0; i < response.routes[0].legs[0].steps.length; i++) {
                 for(var k = 0; k < response.routes[0].legs[0].steps[i].intersections.length; k++) {
-                    Ti.API.info(response.routes[0].legs[0].steps[i].intersections[k].location[0] + ',' + response.routes[0].legs[0].steps[i].intersections[k].location[1]);
-                    mapview.addAnnotation(Map.createAnnotation({
-                        latitude: response.routes[0].legs[0].steps[i].intersections[k].location[0],
-                        longitude: response.routes[0].legs[0].steps[i].intersections[k].location[1],
-                        title: count,
-                        subtitle: 'Mountain View, CA',
-                        pincolor: Map.ANNOTATION_RED,
-                        myid: count // Custom property to uniquely identify this annotation.
-                    }));
-                    count++;
+                    var coord = {
+                        latitude: response.routes[0].legs[0].steps[i].intersections[k].location[1],
+                        longitude: response.routes[0].legs[0].steps[i].intersections[k].location[0],
+                    };
+                    routePoints.push(coord);
                 }
             }
+            // Return the results
+            done(routePoints);
         },
         onerror: function(e) {
             Ti.API.debug(e.error);
@@ -69,8 +76,4 @@ function MapView() {
 
     // Send the request.
     client.send();
-
-    mapWin.open();
-};
-
-module.exports = MapView;
+}
