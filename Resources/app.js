@@ -78,8 +78,8 @@ map.addAnnotation(TiMap.createAnnotation({
 // Long dist: 53.848758, -1.663716
 // Short dist: 53.640894, -1.778847
 map.addAnnotation(TiMap.createAnnotation({
-    latitude: 53.848758,
-    longitude: -1.663716,
+    latitude: 53.675042,
+    longitude: -1.682334,
     title: 'End',
     animate: true,
     pincolor: TiMap.ANNOTATION_GREEN
@@ -105,13 +105,47 @@ function drawRoute() {
         callPolice(routePoints, function(routeTotal) {
             var routeAvrg = routeTotal / routePoints.length;
             Ti.API.info('Average: ' + routeAvrg);
-        });
 
-        map.addRoute(TiMap.createRoute({
-            points: routePoints,
-            color: "#f00",
-            width: 5.0
-        }));
+            for(var i = 0; i < (routePoints.length - 1); i++) {
+
+                var tempRoute = [
+                    pointA = {
+                        latitude: routePoints[i].latitude,
+                        longitude: routePoints[i].longitude
+                    },
+                    pointB = {
+                        latitude: routePoints[i + 1].latitude,
+                        longitude: routePoints[i + 1].longitude
+                    }
+                ];
+
+                var dangerValue = (routePoints[i].incidents + routePoints[i + 1].incidents) / 2;
+
+                var colour = '#ffff00';
+                Ti.API.info('Danger: ' + dangerValue + ' Avg: ' + routeAvrg);
+
+                if(dangerValue <= (routeAvrg * 0.5)) {
+                    colour = '#00ff00';
+                } else if(dangerValue <= (routeAvrg * 1)) {
+                    colour = '#ccff66';
+                } else if(dangerValue <= (routeAvrg * 1.25)) {
+                    colour = '#ffcc00';
+                } else if(dangerValue <= (routeAvrg * 1.5)) {
+                    colour = '#ff9933';
+                } else if(dangerValue <= (routeAvrg * 2)) {
+                    colour = '#ff3300';
+                }
+
+                map.addRoute(TiMap.createRoute({
+                    points: tempRoute,
+                    color: colour,
+                    width: 5.0
+                }));
+            }
+            routePoints.forEach(function(coord) {
+                // Ti.API.info('Lat: ' + coord.latitude + ' Long: ' + coord.longitude + ' Incidents: ' + coord.incidents);
+            });
+        });
     });
 }
 
@@ -124,16 +158,17 @@ function callPolice(routePoints, done) {
     (function loop(i) {
         setTimeout(function() {
             Police(routePoints[routePoints.length - i].latitude, routePoints[routePoints.length - i].longitude, function(policeIncidents) {
+                routePoints[routePoints.length - i].incidents = policeIncidents;
                 routeTotal += policeIncidents;
+                if(--i) {
+                    loop(i);
+                } else {
+                    // Have to wait to callback, otherwise it does so before all API responses are in
+                    setTimeout(function() {
+                        done(routeTotal);
+                    }, 2000);
+                }
             });
-            if(--i) {
-                loop(i);
-            } else {
-                // Have to wait to callback, otherwise it does so before all API responses are in
-                setTimeout(function() {
-                    done(routeTotal);
-                }, 2000);
-            }
-        }, 100)
+        }, 90)
     })(routePoints.length);
 }
