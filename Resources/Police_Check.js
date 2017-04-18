@@ -12,7 +12,7 @@ function Police_Check(lat, long, done) {
     var month = today.getFullYear() + "-" + ("0" + (today.getMonth() + 1)).slice(-2);
 
     // Query the police database for events
-    var request = 'https://data.police.uk/api/crimes-street/all-crime?lat=' + lat + '&lng=' + long + '&date=' + month;
+    var url = 'https://data.police.uk/api/crimes-street/all-crime?lat=' + lat + '&lng=' + long + '&date=' + month;
     // Ti.API.info(request);
 
     // Query the API server
@@ -44,7 +44,7 @@ function Police_Check(lat, long, done) {
     });
 
     // Prepare the connection.
-    client.open("GET", request);
+    client.open("GET", url);
 
     // Send the request.
     client.send();

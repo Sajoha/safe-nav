@@ -83,18 +83,10 @@ function drawRoute() {
 
     // Pass the pins to the method extraction function, then draw the route
     Route(startNode, endNode, function(routePoints) {
-        routePoints.forEach(function(node) {
-            Police(node.latitude, node.longitude, function(policeIncidents) {
-                setTimeout(function() {
-                    map.addAnnotation(TiMap.createAnnotation({
-                        latitude: node.latitude,
-                        longitude: node.longitude,
-                        title: policeIncidents,
-                        animate: false,
-                        pincolor: TiMap.ANNOTATION_RED
-                    }));
-                }, timeout);
-            });
+        // The total amount of incidents returned from each node of the route
+        callPolice(routePoints, function(routeTotal) {
+            var routeAvrg = routeTotal / routePoints.length;
+            Ti.API.info('Average: ' + routeAvrg);
         });
 
         map.addRoute(TiMap.createRoute({
@@ -103,4 +95,27 @@ function drawRoute() {
             width: 5.0
         }));
     });
+}
+
+function callPolice(routePoints, done) {
+    // Total amount of incidents on route
+    var routeTotal = 0;
+
+    // Self calling function to get the police date for each node
+    // The timeout is due to the call limit on the police database of 15 requests per second
+    (function loop(i) {
+        setTimeout(function() {
+            Police(routePoints[routePoints.length - i].latitude, routePoints[routePoints.length - i].longitude, function(policeIncidents) {
+                routeTotal += policeIncidents;
+            });
+            if(--i) {
+                loop(i);
+            } else {
+                // Have to wait to callback, otherwise it does so before all API responses are in
+                setTimeout(function() {
+                    done(routeTotal);
+                }, 2000);
+            }
+        }, 67)
+    })(routePoints.length);
 }
