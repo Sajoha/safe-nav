@@ -1,7 +1,7 @@
-function OSMR_Route(startPin, endPin, done) {
+function OSRM_Route(startPin, endPin, done) {
     // Query the API server with the given coordinates
-    var url = 'http://192.168.0.17:5000/route/v1/driving/' + startPin.longitude + ',' + startPin.latitude + ';' + endPin.longitude + ',' + endPin.latitude + '?steps=true';
-    Ti.API.info('Route request sent to: ' + url);
+    var url = 'http://192.168.0.17:5000/route/v1/driving/' + startPin.longitude + ',' + startPin.latitude + ';' + endPin.longitude + ',' + endPin.latitude + '?steps=true&alternatives=true';
+    Ti.API.info('OSRM: ' + url);
 
     // Instantiate the routePoints object
     var routePoints = [];
@@ -37,4 +37,4 @@ function OSMR_Route(startPin, endPin, done) {
     client.send();
 }
 
-module.exports = OSMR_Route;
+module.exports = OSRM_Route;
