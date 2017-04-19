@@ -1,10 +1,6 @@
-// TODO: Make pins placeable
-
 // TODO: Remove old route when a new one is created
 
-// TODO: Find out how long press works
-
-// TODO: Import this back into the app.js
+// TODO: Remove old pin when a new one is designated
 
 // Imports
 var
@@ -18,7 +14,7 @@ var map = TiMap.createView();
 
 // Get the users current location, and configure the map view
 Titanium.Geolocation.getCurrentPosition(function(e) {
-    map.mapType = TiMap.NORMAL_TYPE,
+    map.mapType = TiMap.HYBRID_TYPE,
         map.region = {
             latitude: e.coords.latitude,
             longitude: e.coords.longitude,
@@ -30,14 +26,6 @@ Titanium.Geolocation.getCurrentPosition(function(e) {
         map.userLocation = true
 });
 mapWin.add(map);
-
-var opts = {
-    cancel: 2,
-    options: ['Confirm', 'Help', 'Cancel'],
-    selectedIndex: 2,
-    destructive: 0,
-    title: 'Delete File?'
-};
 
 // Button for setting the view back to the current location
 var currentButton = Ti.UI.createButton({
@@ -52,38 +40,44 @@ var currentButton = Ti.UI.createButton({
 currentButton.addEventListener('click', function(e) {
     drawRoute();
 });
-currentButton.addEventListener('longpress', function(e) {
-    var dialog = Ti.UI.createOptionDialog(opts).show();
-});
 map.add(currentButton);
 
-
-mapWin.addEventListener('longpress', function(e) {
-    var dialog = Ti.UI.createOptionDialog(opts).show();
+// Listen for the user holding down on the map
+map.addEventListener('longclick', function(e) {
+    var dialog = Ti.UI.createOptionDialog({
+        cancel: 2,
+        options: ['Start Pin', 'End Pin', 'Cancel'],
+        selectedIndex: 2,
+        destructive: 0,
+        title: 'Place Which Pin?'
+    });
+    // Take the option menu click
+    dialog.addEventListener('click', function(evt) {
+        if(evt.index === 0) {
+            // Place a start pin
+            map.addAnnotation(TiMap.createAnnotation({
+                latitude: e.latitude,
+                longitude: e.longitude,
+                title: 'Start',
+                animate: false,
+                pincolor: TiMap.ANNOTATION_RED
+            }));
+        } else if(evt.index === 1) {
+            // Place and end pin
+            map.addAnnotation(TiMap.createAnnotation({
+                latitude: e.latitude,
+                longitude: e.longitude,
+                title: 'End',
+                animate: false,
+                pincolor: TiMap.ANNOTATION_GREEN
+            }));
+        }
+    });
+    dialog.show();
 });
 
 // Open the window
 mapWin.open();
-
-// Add an start pin, currently in a street away from the centre of Huddersfield
-map.addAnnotation(TiMap.createAnnotation({
-    latitude: 53.643306,
-    longitude: -1.758004,
-    title: 'Start',
-    animate: true,
-    pincolor: TiMap.ANNOTATION_RED
-}));
-
-// Add an end pin, currently on the University of Huddersfield
-// Long dist: 53.848758, -1.663716
-// Short dist: 53.640894, -1.778847
-map.addAnnotation(TiMap.createAnnotation({
-    latitude: 53.675042,
-    longitude: -1.682334,
-    title: 'End',
-    animate: true,
-    pincolor: TiMap.ANNOTATION_GREEN
-}));
 
 function drawRoute() {
     // Function variables
