@@ -25,10 +25,9 @@ function OSRM_Route(startPin, endPin, done) {
             done(routePoints);
         },
         onerror: function(e) {
-            Ti.API.debug(e.error);
-            alert('Cannot reach navigation API!');
+            Ti.API.info(e.error);
         },
-        timeout: 5000
+        timeout: 10000
     });
 
     // Prepare the connection.

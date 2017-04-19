@@ -36,11 +36,10 @@ function Police_Check(lat, long, done) {
             done(total);
         },
         onerror: function(e) {
-            Ti.API.debug(e.error);
-            alert('Cannot reach Police database!');
+            Ti.API.info(e.error);
             done();
         },
-        timeout: 5000
+        timeout: 10000
     });
 
     // Prepare the connection
