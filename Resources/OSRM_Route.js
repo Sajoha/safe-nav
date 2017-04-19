@@ -1,7 +1,7 @@
 function OSRM_Route(startPin, endPin, done) {
     // Query the API server with the given coordinates
     var url = 'http://192.168.0.17:5000/route/v1/walking/' + startPin.longitude + ',' + startPin.latitude + ';' + endPin.longitude + ',' + endPin.latitude + '?steps=true&alternatives=true';
-    Ti.API.info('OSRM: ' + url);
+    Ti.API.debug('OSRM: ' + url);
 
     // Instantiate the routePoints object
     var routePoints = [];

@@ -2,6 +2,8 @@
 
 // TODO: Remove old pin when a new one is designated
 
+// TODO: Check if both pins are down before creating route
+
 // Imports
 var
     TiMap = require('ti.map'),
@@ -35,12 +37,26 @@ var currentButton = Ti.UI.createButton({
     width: 100,
     height: 50
 });
-
 // Collect the route points, and draw them onto the map
 currentButton.addEventListener('click', function(e) {
-    drawRoute();
+    drawRoute(map);
 });
 map.add(currentButton);
+
+// Button for setting the view back to the current location
+var temp = Ti.UI.createButton({
+    title: 'Temp',
+    top: '60%',
+    left: '5%',
+    width: 100,
+    height: 50
+});
+// Collect the route points, and draw them onto the map
+temp.addEventListener('click', function(e) {
+    Ti.API.info('Removing Route?');
+    // map.removeRoute();
+});
+map.add(temp);
 
 // Listen for the user holding down on the map
 map.addEventListener('longclick', function(e) {
@@ -54,23 +70,35 @@ map.addEventListener('longclick', function(e) {
     // Take the option menu click
     dialog.addEventListener('click', function(evt) {
         if(evt.index === 0) {
-            // Place a start pin
-            map.addAnnotation(TiMap.createAnnotation({
-                latitude: e.latitude,
-                longitude: e.longitude,
-                title: 'Start',
-                animate: false,
-                pincolor: TiMap.ANNOTATION_RED
-            }));
+            getPins(map, function(startPin, endPin) {
+                // If a pin already exists, remove it
+                if(typeof startPin !== 'undefined') {
+                    map.removeAnnotation(startPin);
+                }
+                // Place a start pin
+                map.addAnnotation(TiMap.createAnnotation({
+                    latitude: e.latitude,
+                    longitude: e.longitude,
+                    title: 'Start',
+                    animate: true,
+                    pincolor: TiMap.ANNOTATION_RED
+                }));
+            });
         } else if(evt.index === 1) {
-            // Place and end pin
-            map.addAnnotation(TiMap.createAnnotation({
-                latitude: e.latitude,
-                longitude: e.longitude,
-                title: 'End',
-                animate: false,
-                pincolor: TiMap.ANNOTATION_GREEN
-            }));
+            getPins(map, function(startPin, endPin) {
+                // If a pin already exists, remove it
+                if(typeof endPin !== 'undefined') {
+                    map.removeAnnotation(endPin);
+                }
+                // Place an end pin
+                map.addAnnotation(TiMap.createAnnotation({
+                    latitude: e.latitude,
+                    longitude: e.longitude,
+                    title: 'End',
+                    animate: true,
+                    pincolor: TiMap.ANNOTATION_GREEN
+                }));
+            })
         }
     });
     dialog.show();
@@ -79,65 +107,66 @@ map.addEventListener('longclick', function(e) {
 // Open the window
 mapWin.open();
 
-function drawRoute() {
-    // Function variables
+function getPins(map, done) {
+    // Declare the nodes so they're global for the function
     var startNode,
         endNode;
 
     // Extract the start node and the end node
-    for(var i = 0; i < map.annotations.length; i++) {
-        if(map.annotations[i].title === 'Start') {
-            startNode = map.annotations[i];
-        } else if(map.annotations[i].title === 'End') {
-            endNode = map.annotations[i];
+    map.annotations.forEach(function(pin) {
+        if(pin.title === 'Start') {
+            startNode = pin;
+        } else {
+            endNode = pin;
         }
-    }
+    });
+    done(startNode, endNode);
+}
 
-    // Pass the pins to the method extraction function, then draw the route
-    Route(startNode, endNode, function(routePoints) {
-        // The total amount of incidents returned from each node of the route
-        callPolice(routePoints, function(routeTotal) {
-            var routeAvrg = routeTotal / routePoints.length;
-            Ti.API.info('Average: ' + routeAvrg);
+function drawRoute(map) {
+    // Get the start and end point
+    getPins(map, function(startNode, endNode) {
+        // Pass the pins to the method extraction function, then draw the route
+        Route(startNode, endNode, function(routePoints) {
+            // The total amount of incidents returned from each node of the route
+            callPolice(routePoints, function(routeTotal) {
+                var routeAvrg = routeTotal / routePoints.length;
 
-            for(var i = 0; i < (routePoints.length - 1); i++) {
+                for(var i = 0; i < (routePoints.length - 1); i++) {
 
-                var tempRoute = [
-                    pointA = {
-                        latitude: routePoints[i].latitude,
-                        longitude: routePoints[i].longitude
-                    },
-                    pointB = {
-                        latitude: routePoints[i + 1].latitude,
-                        longitude: routePoints[i + 1].longitude
+                    var tempRoute = [
+                        pointA = {
+                            latitude: routePoints[i].latitude,
+                            longitude: routePoints[i].longitude
+                        },
+                        pointB = {
+                            latitude: routePoints[i + 1].latitude,
+                            longitude: routePoints[i + 1].longitude
+                        }
+                    ];
+
+                    var dangerValue = (routePoints[i].incidents + routePoints[i + 1].incidents) / 2;
+
+                    var colour = '#ffff00';
+
+                    if(dangerValue <= (routeAvrg * 0.5)) {
+                        colour = '#00ff00';
+                    } else if(dangerValue <= (routeAvrg * 1)) {
+                        colour = '#ccff66';
+                    } else if(dangerValue <= (routeAvrg * 1.25)) {
+                        colour = '#ffcc00';
+                    } else if(dangerValue <= (routeAvrg * 1.5)) {
+                        colour = '#ff9933';
+                    } else if(dangerValue <= (routeAvrg * 2)) {
+                        colour = '#ff3300';
                     }
-                ];
 
-                var dangerValue = (routePoints[i].incidents + routePoints[i + 1].incidents) / 2;
-
-                var colour = '#ffff00';
-                Ti.API.info('Danger: ' + dangerValue + ' Avg: ' + routeAvrg);
-
-                if(dangerValue <= (routeAvrg * 0.5)) {
-                    colour = '#00ff00';
-                } else if(dangerValue <= (routeAvrg * 1)) {
-                    colour = '#ccff66';
-                } else if(dangerValue <= (routeAvrg * 1.25)) {
-                    colour = '#ffcc00';
-                } else if(dangerValue <= (routeAvrg * 1.5)) {
-                    colour = '#ff9933';
-                } else if(dangerValue <= (routeAvrg * 2)) {
-                    colour = '#ff3300';
+                    map.addRoute(TiMap.createRoute({
+                        points: tempRoute,
+                        color: colour,
+                        width: 5.0
+                    }));
                 }
-
-                map.addRoute(TiMap.createRoute({
-                    points: tempRoute,
-                    color: colour,
-                    width: 5.0
-                }));
-            }
-            routePoints.forEach(function(coord) {
-                // Ti.API.info('Lat: ' + coord.latitude + ' Long: ' + coord.longitude + ' Incidents: ' + coord.incidents);
             });
         });
     });
@@ -147,10 +176,27 @@ function callPolice(routePoints, done) {
     // Total amount of incidents on route
     var routeTotal = 0;
 
+    var progress = Ti.UI.createProgressBar({
+        top: 25,
+        width: 250,
+        min: 0,
+        max: routePoints.length,
+        value: 0,
+        color: 'blue',
+        message: 'Querying Coordinate 0 of ' + routePoints.length,
+        font: {
+            fontSize: 14,
+            fontWeight: 'bold'
+        },
+        style: Ti.UI.iOS.ProgressBarStyle.PLAIN,
+    });
+    mapWin.add(progress);
+
     // Self calling function to get the police date for each node
     // The timeout is due to the call limit on the police database of 15 requests per second
     (function loop(i) {
         setTimeout(function() {
+            progress.message = 'Querying Coordinate ' + ++progress.value + ' of ' + routePoints.length;
             Police(routePoints[routePoints.length - i].latitude, routePoints[routePoints.length - i].longitude, function(policeIncidents) {
                 routePoints[routePoints.length - i].incidents = policeIncidents;
                 routeTotal += policeIncidents;
@@ -159,6 +205,7 @@ function callPolice(routePoints, done) {
                 } else {
                     // Have to wait to callback, otherwise it does so before all API responses are in
                     setTimeout(function() {
+                        mapWin.remove(progress);
                         done(routeTotal);
                     }, 2000);
                 }

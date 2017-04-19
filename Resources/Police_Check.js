@@ -13,7 +13,7 @@ function Police_Check(lat, long, done) {
 
     // Query the police database for events
     var url = 'https://data.police.uk/api/crimes-street/all-crime?lat=' + lat + '&lng=' + long + '&date=' + month;
-    Ti.API.info('Police: ' + url);
+    Ti.API.debug('Police: ' + url);
 
     // Query the API server
     var client = Ti.Network.createHTTPClient({
