@@ -1,16 +1,11 @@
 package main
 
-// TODO: Remove fatal incidents on err in favour of proper error handling
-
-// TODO: Make month dynamic for Police API call
-
-// TODO: Find out how timeouts work in http calls
-
 import (
 	"fmt"
 	"github.com/antonholmquist/jason"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -37,12 +32,11 @@ func main() {
 
 	// Get all the ways within the bounding box
 	response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.638207,-1.795287,53.653141,-1.753599);out;")
+	// response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.649999,-1.790000,53.650141,-1.789599);out;")
 
 	// Get all of the ways within the return and iterate over them
 	elements, _ := response.GetObjectArray("elements")
 	for count, way := range elements {
-		// An update on progress
-		fmt.Printf("%v of %v...\n", (count + 1), len(elements))
 
 		// Create a way object to hold this instance of way
 		wayID, _ := way.GetNumber("id")
@@ -54,19 +48,23 @@ func main() {
 		// Extract the nodes tied to this way
 		nodes, _ := way.GetNumberArray("nodes")
 
-		// Get the first and the last node
-		arr := [...]string{string(nodes[0]), string(nodes[len(nodes)-1])}
+		// An update on progress
+		log.Printf("Checking %v of %v, contains %v nodes... ", (count + 1), len(elements), len(nodes))
 
-		for _, node := range arr {
+		for _, node := range nodes {
 			// Call the Overpass API to get the coordinates of the node
-			lat, long := getCoords(node)
+			lat, long := getCoords(string(node))
 
 			// Call the Police API to get the incidents that have occured near the node
 			incidentCount := contactPolice(lat, long)
 
+			if incidentCount == 0 {
+				log.Printf("Node %v failed...", string(node))
+			}
+
 			// Create a node object to contain the data, and append it to our way object
 			tempNode := Node{
-				id:        node,
+				id:        string(node),
 				latitude:  lat,
 				longitude: long,
 				incidents: incidentCount,
@@ -78,8 +76,27 @@ func main() {
 		ways = append(ways, tempWay)
 	}
 
+	file, err := os.Create("update.csv")
+	if err != nil {
+		log.Printf("Error in file creation: %v", err)
+	}
+
+	log.Printf("Writing output to file...\n")
+	for _, way := range ways {
+		for index, _ := range way.Nodes {
+			if index != (len(way.Nodes) - 1) {
+				currentNode := way.Nodes[index]
+				nextNode := way.Nodes[index+1]
+				average := (currentNode.incidents + nextNode.incidents) / 2
+				fmt.Fprintf(file, "%v, %v, 0, %v\n", currentNode.id, nextNode.id, average)
+			}
+		}
+	}
+
+	file.Close()
+
 	// Display the time take to complete
-	fmt.Printf("Update took: %s", time.Since(start))
+	fmt.Printf("Update took: %s\n", time.Since(start))
 }
 
 /******************************************************************************
@@ -119,13 +136,13 @@ func httpReq(request string) *jason.Object {
 	// Make a call to the Overpass API to get an individual nodes details
 	resp, err := http.Get(request)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error on HTTP request: %v", err)
 	}
 
 	// Parse the http response into readable JSON
 	response, err := jason.NewObjectFromReader(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error parsing HTTP response: %v", err)
 	}
 
 	// Close the connection
@@ -137,24 +154,25 @@ func httpReq(request string) *jason.Object {
 
 /******************************************************************************
 * A function for contacting the Poice API. Takes a latitude and longitude in,
-* then works out the date from three months ago before passing the request to
-* the API. The three months is necessary since this tends to be how up to date
+* then works out the date from four months ago before passing the request to
+* the API. The four months is necessary since this tends to be how up to date
 * the database is.
 ******************************************************************************/
 func contactPolice(lat string, long string) int {
-	// FIXME: Make this dynamic
-	month := "2017-01"
+
+	// Get the date in a YYYY-MM format to feed into the API call
+	month := time.Now().AddDate(0, -4, 0).Format("2006-01")
 
 	// Request a crime report from the given node
 	resp, err := http.Get("https://data.police.uk/api/crimes-street/all-crime?lat=" + lat + "&lng=" + long + "&date=" + month)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error on Police HTTP request: %v", err)
 	}
 
 	// Parse the http response into readable JSON
 	response, err := jason.NewValueFromReader(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error on parsing Police HTTP response: %v", err)
 	}
 
 	// Close the connection
@@ -163,11 +181,8 @@ func contactPolice(lat string, long string) int {
 	// Extract a usable array from the JSON Array
 	array, err := response.Array()
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Error converting to array: %v", err)
 	}
-
-	// Timeout to abide by the 15 requests per second usage policy
-	time.Sleep(67 * time.Millisecond)
 
 	// Return the number of incidents
 	return len(array)
