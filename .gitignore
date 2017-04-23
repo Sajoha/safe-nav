@@ -1,5 +1,5 @@
 # Build folder and log file
 build/
 build.log
-Appium/node_modules
-Appium/npm-debug.log
+npm-debug.log
+node_modules
