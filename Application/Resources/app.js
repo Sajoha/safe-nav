@@ -135,6 +135,8 @@ function drawRoute() {
                     // Calculate the average incidents for the entire route
                     var routeAvrg = routeTotal / routePoints.length;
 
+                    Ti.API.info(routeAvrg)
+
                     // Iterate over the route points
                     for(var i = 0; i < (routePoints.length - 1); i++) {
                         // Create a temporary route between two instruction points on the map
