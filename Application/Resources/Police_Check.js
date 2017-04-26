@@ -1,12 +1,10 @@
-// TODO: Make sure the year is correct
-
 function Police_Check(lat, long, done) {
     // Get the current date
     var count = 0,
         today = new Date();
 
-    // Go back 3 months to the latest Police record
-    today.setMonth(today.getMonth() - 3);
+    // Go back 4 months to the latest Police record
+    today.setMonth(today.getMonth() - 4);
 
     // Create a string of YYYY-DD format for the API URL.
     var month = today.getFullYear() + "-" + ("0" + (today.getMonth() + 1)).slice(-2);
@@ -19,6 +17,8 @@ function Police_Check(lat, long, done) {
     var client = Ti.Network.createHTTPClient({
         onload: function(e) {
             var total = 0;
+            // Ti.API.info(this.responseText.length);
+
             total += (this.responseText.match(/anti-social-behaviour/g) || []).length;
             total += (this.responseText.match(/bicycle-theft/g) || []).length;
             total += (this.responseText.match(/burglary/g) || []).length;
@@ -42,10 +42,10 @@ function Police_Check(lat, long, done) {
         timeout: 10000
     });
 
-    // Prepare the connection
+    Prepare the connection
     client.open("GET", url);
 
-    // Send the request
+    Send the request
     client.send();
 }
 

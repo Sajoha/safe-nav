@@ -27,19 +27,105 @@ Titanium.Geolocation.getCurrentPosition(function(e) {
 });
 mapWin.add(map);
 
-// Button for setting the view back to the current location
-var currentButton = Ti.UI.createButton({
-    title: 'Calculate',
-    top: '80%',
-    left: '5%',
+// Button for getting a route based on the fastest route available
+var plotVanilla = Ti.UI.createButton({
+    title: 'Fastest Route',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    top: '90%',
+    right: '2%',
     width: 100,
-    height: 50
+    height: 35
 });
-// Collect the route points, and draw them onto the map
-currentButton.addEventListener('click', function(e) {
-    drawRoute();
+// Call the route draw against the vanilla server
+plotVanilla.addEventListener('click', function(e) {
+    drawRoute('192.168.0.18');
 });
-map.add(currentButton);
+map.add(plotVanilla);
+
+// Button for getting a route based on the safest route available
+var plotPolice = Ti.UI.createButton({
+    title: 'Safest Route',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    top: '85%',
+    right: '2%',
+    width: 100,
+    height: 35
+});
+// Call the route draw against the updated server
+plotPolice.addEventListener('click', function(e) {
+    drawRoute('192.168.0.17');
+});
+map.add(plotPolice);
+
+// Button for zooming into the map view
+var zoomIn = Ti.UI.createButton({
+    title: '+',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    top: '5%',
+    right: '2%',
+    width: 30,
+    height: 30
+});
+// Update the map view by zooming in
+zoomIn.addEventListener('click', function(e) {
+    map.setLocation({
+        latitude: map.region.latitude,
+        longitude: map.region.longitude,
+        latitudeDelta: (map.region.latitudeDelta / 1.50),
+        longitudeDelta: (map.region.longitudeDelta / 1.50),
+        animate: true
+    });
+});
+map.add(zoomIn);
+
+// Button for zooming out in the map view
+var zoomOut = Ti.UI.createButton({
+    title: '-',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    top: '10%',
+    right: '2%',
+    width: 30,
+    height: 30
+});
+// Update the map view by zooming out
+zoomOut.addEventListener('click', function(e) {
+    map.setLocation({
+        latitude: map.region.latitude,
+        longitude: map.region.longitude,
+        latitudeDelta: (map.region.latitudeDelta * 1.50),
+        longitudeDelta: (map.region.longitudeDelta * 1.50),
+        animate: true
+    });
+});
+map.add(zoomOut);
+
+// Button for setting the view back to the current location
+var currentLocation = Ti.UI.createButton({
+    title: 'o',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    top: '15%',
+    right: '2%',
+    width: 30,
+    height: 30
+});
+// Update the map view with the current location
+currentLocation.addEventListener('click', function(e) {
+    Titanium.Geolocation.getCurrentPosition(function(e) {
+        map.setLocation({
+            latitude: e.coords.latitude,
+            longitude: e.coords.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+            animate: true
+        });
+    });
+});
+map.add(currentLocation);
 
 // Listen for the user holding down on the map
 map.addEventListener('longclick', function(e) {
@@ -117,72 +203,78 @@ function getPins(done) {
     done(startNode, endNode);
 }
 
-function drawRoute() {
+function drawRoute(serverAddress) {
     // Get the start and end point
     getPins(function(startNode, endNode) {
         // Check if the pins have been placed
-        if(startNode == null) {
-            Ti.API.info('Start pin not placed');
+        if(startNode == null && endNode == null) {
+            alert('No routing pins placed!');
+        } else if(startNode == null) {
+            alert('Start pin not placed!');
         } else if(endNode == null) {
-            Ti.API.info('End pin not placed');
+            alert('End pin not placed!');
         } else {
             // Clear the old route
             clearRoute(function() {});
             // Pass the pins to the method extraction function, then draw the route
-            Route(startNode, endNode, function(routePoints) {
-                // The total amount of incidents returned from each node of the route
-                callPolice(routePoints, function(routeTotal) {
-                    // Calculate the average incidents for the entire route
-                    var routeAvrg = routeTotal / routePoints.length;
+            Route(startNode, endNode, serverAddress, function(routePoints) {
+                if(routePoints == null) {
+                    alert('Error connecting to the routing service!')
+                } else {
+                    // The total amount of incidents returned from each node of the route
+                    callPolice(routePoints, function(routeTotal) {
+                        // Calculate the average incidents for the entire route
+                        var routeAvrg = routeTotal / routePoints.length;
 
-                    Ti.API.info(routeAvrg)
+                        Ti.API.info('Average number of incidents per node: ' + Math.round(routeAvrg))
 
-                    // Iterate over the route points
-                    for(var i = 0; i < (routePoints.length - 1); i++) {
-                        // Create a temporary route between two instruction points on the map
-                        var tempRoute = [
-                            pointA = {
-                                latitude: routePoints[i].latitude,
-                                longitude: routePoints[i].longitude
-                            },
-                            pointB = {
-                                latitude: routePoints[i + 1].latitude,
-                                longitude: routePoints[i + 1].longitude
+                        // Iterate over the route points
+                        for(var i = 0; i < (routePoints.length - 1); i++) {
+                            // Create a temporary route between two instruction points on the map
+                            var tempRoute = [
+                                pointA = {
+                                    latitude: routePoints[i].latitude,
+                                    longitude: routePoints[i].longitude
+                                },
+                                pointB = {
+                                    latitude: routePoints[i + 1].latitude,
+                                    longitude: routePoints[i + 1].longitude
+                                }
+                            ];
+
+                            // Calculate the average danger factor based on the two readings at each end
+                            var dangerValue = (routePoints[i].incidents + routePoints[i + 1].incidents) / 2;
+
+                            // Get the colour for the segment based on how far the incident rate fluctuates from the average
+                            var colour = '#ffff00';
+
+                            if(dangerValue <= (routeAvrg * 0.5)) {
+                                colour = '#00ff00';
+                            } else if(dangerValue <= (routeAvrg * 1)) {
+                                colour = '#ccff66';
+                            } else if(dangerValue <= (routeAvrg * 1.25)) {
+                                colour = '#ffcc00';
+                            } else if(dangerValue <= (routeAvrg * 1.5)) {
+                                colour = '#ff9933';
+                            } else if(dangerValue <= (routeAvrg * 2)) {
+                                colour = '#ff3300';
                             }
-                        ];
 
-                        // Calculate the average danger factor based on the two readings at each end
-                        var dangerValue = (routePoints[i].incidents + routePoints[i + 1].incidents) / 2;
+                            // Create the route object using the coords and colour
+                            var segment = TiMap.createRoute({
+                                points: tempRoute,
+                                color: colour,
+                                width: 5.0
+                            });
 
-                        // Get the colour for the segment based on how far the incident rate fluctuates from the average
-                        var colour = '#ffff00';
+                            // Record the route segments so they can be removed later
+                            segments.push(segment);
 
-                        if(dangerValue <= (routeAvrg * 0.5)) {
-                            colour = '#00ff00';
-                        } else if(dangerValue <= (routeAvrg * 1)) {
-                            colour = '#ccff66';
-                        } else if(dangerValue <= (routeAvrg * 1.25)) {
-                            colour = '#ffcc00';
-                        } else if(dangerValue <= (routeAvrg * 1.5)) {
-                            colour = '#ff9933';
-                        } else if(dangerValue <= (routeAvrg * 2)) {
-                            colour = '#ff3300';
+                            // Draw the segment onto the map
+                            map.addRoute(segment);
                         }
-
-                        // Create the route object using the coords and colour
-                        var segment = TiMap.createRoute({
-                            points: tempRoute,
-                            color: colour,
-                            width: 5.0
-                        });
-
-                        // Record the route segments so they can be removed later
-                        segments.push(segment);
-
-                        // Draw the segment onto the map
-                        map.addRoute(segment);
-                    }
-                });
+                    });
+                }
             });
         }
     });
@@ -193,8 +285,10 @@ function callPolice(routePoints, done) {
     var routeTotal = 0;
 
     var progress = Ti.UI.createProgressBar({
-        top: 25,
-        width: 250,
+        height: 45,
+        width: '75%',
+        backgroundColor: '#ffffff',
+        borderRadius: 10,
         min: 0,
         max: routePoints.length,
         value: 0,

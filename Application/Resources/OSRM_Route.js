@@ -1,6 +1,6 @@
-function OSRM_Route(startPin, endPin, done) {
+function OSRM_Route(startPin, endPin, serverAddress, done) {
     // Query the API server with the given coordinates
-    var url = 'http://192.168.0.17:5000/route/v1/walking/' + startPin.longitude + ',' + startPin.latitude + ';' + endPin.longitude + ',' + endPin.latitude + '?steps=true&alternatives=true';
+    var url = 'http://' + serverAddress + ':5000/route/v1/walking/' + startPin.longitude + ',' + startPin.latitude + ';' + endPin.longitude + ',' + endPin.latitude + '?steps=true&alternatives=true';
     Ti.API.debug('OSRM: ' + url);
 
     // Instantiate the routePoints object
@@ -26,6 +26,7 @@ function OSRM_Route(startPin, endPin, done) {
         },
         onerror: function(e) {
             Ti.API.info(e.error);
+            done(null)
         },
         timeout: 10000
     });
