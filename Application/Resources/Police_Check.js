@@ -1,3 +1,12 @@
+/*******************************************************************************
+ * Takes a latitude and longitude in, and then queries the Police database API
+ * for the number of incidents nearby. Does so for 4 months back due to this
+ * being the most reliable and up to date log of crimes.
+ *
+ * @param {String} lat - Value for latitude
+ * @param {String} long - Value for longitude
+ * @param {function} done - Callback for when the job is complete
+ ******************************************************************************/
 function Police_Check(lat, long, done) {
     // Get the current date
     var count = 0,
@@ -13,12 +22,10 @@ function Police_Check(lat, long, done) {
     var url = 'https://data.police.uk/api/crimes-street/all-crime?lat=' + lat + '&lng=' + long + '&date=' + month;
     Ti.API.debug('Police: ' + url);
 
-    // Query the API server
+    // Query the API server, and count the number of incidents
     var client = Ti.Network.createHTTPClient({
         onload: function(e) {
             var total = 0;
-            // Ti.API.info(this.responseText.length);
-
             total += (this.responseText.match(/anti-social-behaviour/g) || []).length;
             total += (this.responseText.match(/bicycle-theft/g) || []).length;
             total += (this.responseText.match(/burglary/g) || []).length;
@@ -37,15 +44,16 @@ function Police_Check(lat, long, done) {
         },
         onerror: function(e) {
             Ti.API.info(e.error);
-            done();
+            done(null);
         },
+        // Timeout of 10 seconds
         timeout: 10000
     });
 
-    Prepare the connection
+    // Prepare the connection
     client.open("GET", url);
 
-    Send the request
+    // Send the request
     client.send();
 }
 
