@@ -1,10 +1,16 @@
-# The Application
+# Safe Nav
 
 ## Overview
 
-The purpose of this application, is to allow end users to plot the fastest route from A to B, but also allow it to be the safest route between the two points.
+### Application
 
-## Development
+This application is designed to allow an end user to find the fastest route between two points. The user can drop two pins on a map, and then a route is retrieved between the two points using the OSRM Backend service. This is drawn onto the map, whilst checking each instruction point against the UK Police database. The route is colour coded based on how much each step varies from the average crime incident count, allowing for more dangerous areas on the route to be visually seen. A heat map can also be created, visually showing the crime layout for the current map view.
+
+### Scraper
+
+The scraper is a GoLang tool, it first queries the Overpass API to get all the ways within a predefined bounding box. The coordinates for each node making up the way are then put through the Police database to get an incident count. Once all the incidents have been collected, a speed value is generated depending on how far the node varies from the average of the region collected, then an update.csv file is created in the appropriate format to push to the OSRM Backend server to update the map around the crime data.
+
+## Development Tools
 
 The application is coded in JavaScript, and built using the Appcelerator Titanium product. Designed for use on iPhone and Android phone devices.
 
@@ -12,7 +18,10 @@ The application is coded in JavaScript, and built using the Appcelerator Titaniu
 
 ## API Usage
 
-The two APIs in use for this application are the OSRM backend service, and the UK Police database. The fastest route is created using a locally hosted OSRM backend server, then using the instruction coordinates from each step of the journey, a danger factor is calculated from the Police database. Note that this second step is slow due to a 15 request per second limit when using the Police database.
+This project relies on three APIs; OSRM Backend, Overpass and the UK Police crime database. OSRM provides the fastest route utilising the current dataset it has to the application. Overpass is used for finding all of the ways in a certain bounding box. The Police API is used for getting all of the incidents near to a given latitude and longitude.
+
+The OSRM Backend and Overpass API were both hosted locally on a Ubuntu server for running this project.
 
 - [OSRM Backend](http://project-osrm.org)
+- [Overpass API](http://overpass-api.de)
 - [UK Police API](https://data.police.uk)
