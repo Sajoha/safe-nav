@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/antonholmquist/jason"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -37,8 +39,7 @@ func main() {
 
 	// Get all the ways within the bounding box
 	// response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.619325,-1.874757,53.666338,-1.714106);out;") // Map of Huddersfield
-	// response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.781598,-1.589220,53.816793,-1.507249);out;") // Map of Leeds
-	response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.470077,-2.263334,53.489405,-2.218783);out;") // Map of Manchester
+	response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.781598,-1.589220,53.816793,-1.507249);out;") // Map of Leeds
 
 	// Get all of the ways within the return and iterate over them
 	elements, _ := response.GetObjectArray("elements")
@@ -61,18 +62,13 @@ func main() {
 			// Call the Overpass API to get the coordinates of the node
 			lat, long := getCoords(string(node))
 
-			query(lat, long)
-
 			// Call the Police API to get the incidents that have occured near the node
-			incidentCount := contactPolice(lat, long)
+			// incidentCount := contactPolice(lat, long)
+			incidentCount := db(lat, long)
 
 			incidentAverage = incidentAverage + incidentCount
 
 			nodeCount++
-
-			if incidentCount == 0 {
-				log.Printf("Node %v failed...", string(node))
-			}
 
 			// Create a node object to contain the data, and append it to our way object
 			tempNode := Node{
@@ -175,7 +171,7 @@ func httpReq(request string) *jason.Object {
 * the API. The four months is necessary since this tends to be how up to date
 * the database is.
 *******************************************************************************/
-func contactPolice(lat string, long string) int {
+func contactPolice(lat, long string) int {
 
 	// Get the date in a YYYY-MM format to feed into the API call
 	month := time.Now().AddDate(0, -4, 0).Format("2006-01")
@@ -203,6 +199,65 @@ func contactPolice(lat string, long string) int {
 
 	// Return the number of incidents
 	return len(array)
+}
+
+/*******************************************************************************
+* Alternative to using the online Police API, instead this queries a MySQL
+* database containg data downloaded from the Police database. Faster method than
+* the leaky bucket API.
+*******************************************************************************/
+func db(lat, long string) int {
+
+	// Open a connection to the database
+	db, err := sql.Open("mysql", "shaig:iBxDaYD8VH^cZDLPZ7U%gmqa@tcp(192.168.0.18:3306)/police")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Convert the latitude to a float
+	floatLatitude, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		log.Printf("Error converting latitude: %v", err)
+	}
+
+	// Convert the longitude to float
+	floatLongitude, err := strconv.ParseFloat(long, 64)
+	if err != nil {
+		log.Printf("Error converting longitude: %v", err)
+	}
+
+	// Reduce each ccordinate to two decimal figures
+	latitude := fmt.Sprintf("%.2f", floatLatitude)
+	longitude := fmt.Sprintf("%.2f", floatLongitude)
+
+	// Query the database for the amount of incidents near the new broader coordinates
+	query := fmt.Sprintf("SELECT COUNT(*) FROM uk_police WHERE Latitude LIKE '%%%v%%' AND Longitude LIKE '%%%v%%'", latitude, longitude)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("Error on database query: ", err)
+	}
+	defer rows.Close()
+
+	// Initialise count as 0
+	count := 0
+
+	// Iterate over the rows
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			log.Printf("Error on iterating over rows: ", err)
+		}
+	}
+
+	// Check the rows for errors
+	err = rows.Err()
+	if err != nil {
+		log.Printf("Error with rows: ", err)
+	}
+
+	// Return the number of incidents
+	return count
 }
 
 /*******************************************************************************

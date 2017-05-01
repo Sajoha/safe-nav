@@ -373,6 +373,9 @@ function drawRoute(serverAddress) {
  * @param {function} done - Callback for when the job is complete
  ******************************************************************************/
 function callPolice(points, done) {
+    // Lock the UI
+    lockUI();
+
     // Total amount of incidents on route
     var routeTotal = 0;
 
@@ -421,6 +424,11 @@ function callPolice(points, done) {
                     setTimeout(function() {
                         // Remove the progress bar from the UI
                         mapWin.remove(progress);
+
+                        // Free up the UI
+                        unlockUI();
+
+                        // Callback
                         done(routeTotal);
                     }, 2000);
                 }
@@ -435,15 +443,16 @@ function callPolice(points, done) {
  * gradient, representitve of the average incidents per tile.
  ******************************************************************************/
 function display() {
-    // var height = Ti.Platform.displayCaps.platformHeight;
-    // var width = Ti.Platform.displayCaps.platformWidth;
+    // Get the height of the screen divided by 16 for the dimension of the squares
     var dimension = (Ti.Platform.displayCaps.platformHeight / 16);
 
+    // Get the position of all the squares, and the map coordinates of their centre
     heatMap(function(squarePoints) {
+        // Run all the squares through the police database
         callPolice(squarePoints, function(average) {
 
+            // Calculate the average for the region on the display
             var areaAverage = average / squarePoints.length;
-            console.log('Average incidents per tile: ' + Math.round(areaAverage));
 
             for(var i = 0; i < squarePoints.length; i++) {
                 // Get the colour for the segment based on how far the incident rate fluctuates from the average
@@ -461,6 +470,7 @@ function display() {
                     colour = '#59ff3300';
                 }
 
+                // Create a square on the display, with a colour dependant of the crime average
                 var tile = Ti.UI.createView({
                     top: squarePoints[i].y,
                     left: squarePoints[i].x,
@@ -468,7 +478,9 @@ function display() {
                     height: dimension,
                     backgroundColor: colour
                 });
+                // Add it to the tile array
                 tiles.push(tile);
+                // Add it to the display
                 map.add(tile);
             }
 
@@ -540,4 +552,32 @@ function heatMap(done) {
             done(squarePoints);
         }
     })(144);
+}
+
+/*******************************************************************************
+ * Disable the UI, so it can't be used whilst waiting for an action to complete.
+ ******************************************************************************/
+function lockUI() {
+    zoomIn.setEnabled(false);
+    zoomOut.setEnabled(false);
+    currentLocation.setEnabled(false);
+    togglePolice.setEnabled(false);
+    plotVanilla.setEnabled(false);
+    plotPolice.setEnabled(false);
+    loadMap.setEnabled(false);
+    map.setEnabled(false);
+}
+
+/*******************************************************************************
+ * Enables the UI again once the long action has complete.
+ ******************************************************************************/
+function unlockUI() {
+    zoomIn.setEnabled(true);
+    zoomOut.setEnabled(true);
+    currentLocation.setEnabled(true);
+    togglePolice.setEnabled(true);
+    plotVanilla.setEnabled(true);
+    plotPolice.setEnabled(true);
+    loadMap.setEnabled(true);
+    map.setEnabled(true);
 }
