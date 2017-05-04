@@ -436,6 +436,10 @@ function callPolice(points, done) {
                     // Free up the UI
                     unlockUI();
 
+                    if(routeTotal === 0) {
+                        alert('Couldn\'t connect to Police Database');
+                    }
+
                     // Callback
                     done(routeTotal);
                 }, 2000);

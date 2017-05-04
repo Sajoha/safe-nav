@@ -25,3 +25,10 @@ The OSRM Backend and Overpass API were both hosted locally on a Ubuntu server fo
 - [OSRM Backend](http://project-osrm.org)
 - [Overpass API](http://overpass-api.de)
 - [UK Police API](https://data.police.uk)
+
+## GoLang Packages
+
+A few GoLang tools were also used for handling MySQL data and parsing JSON response, they can be found below.
+
+- [Go-MySQL-Driver](https://github.com/go-sql-driver/mysql)
+- [Jason the JSON Parser](github.com/antonholmquist/jason)

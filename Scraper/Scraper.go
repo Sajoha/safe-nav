@@ -38,8 +38,8 @@ func main() {
 	nodeCount := 0
 
 	// Get all the ways within the bounding box
-	// response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.619325,-1.874757,53.666338,-1.714106);out;") // Map of Huddersfield
-	response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.781598,-1.589220,53.816793,-1.507249);out;") // Map of Leeds
+	response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.619325,-1.874757,53.666338,-1.714106);out;") // Map of Huddersfield
+	// response := httpReq("http://192.168.0.17/api/interpreter?data=[out:json];way(53.781598,-1.589220,53.816793,-1.507249);out;") // Map of Leeds
 
 	// Get all of the ways within the return and iterate over them
 	elements, _ := response.GetObjectArray("elements")
